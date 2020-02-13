@@ -1,0 +1,36 @@
+<%- include('partials/header');  %>
+
+    <% if(islogin){ %>
+        <form action="/" method="post">
+            <div class="form-group">
+                <label for="Email">Email address</label>
+                <input type="email" class="form-control" name="email" placeholder="Enter email">
+                <label for="Password">Password</label>
+                <input type="password" class="form-control" name="password" placeholder="Password">
+            </div>
+            <button type="submit" class="btn btn-primary">Login</button>
+            Not a member<a href="/signup">SignUp</a>
+        </form>
+    <%} else {%>
+        <form action="/signup" method="post">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" class="form-control" name="username">
+    
+                <label for="Email">Email address</label>
+                <input type="email" class="form-control" name="email" aria-describedby="emailHelp" placeholder="Enter email">
+    
+                <label for="Password">Password</label>
+                <input type="password" class="form-control" name="password" placeholder="Password">
+    
+                <label for="confirmPassword">Confirm Password</label>
+                <input type="password" class="form-control" name="confirmPassword" placeholder="Re-Enter Password">
+            </div>
+            <button type="submit" class="btn btn-primary">SignUp</button>
+        </form>
+    <% } %>
+    
+
+<%- include('partials/footer');  %>
+
+
