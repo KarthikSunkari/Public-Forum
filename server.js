@@ -3,8 +3,10 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const app = express();
 const _ = require('lodash');
+const expressValidator = require('express-validator');
 app.set('view engine', 'ejs');
 app.use(bodyParser.urlencoded({extended:true}));
+app.use(expressValidator());
 app.use(express.static("public"));
 
 let users=[];
@@ -39,9 +41,27 @@ app.post("/",function(req,res){
 });
 
 app.post("/signup",function(req,res){
+
+    req.checkBody('username', 'Username field cannot be empty.').notEmpty();
+    req.checkBody('email', 'The email you entered is invalid, please try again.').isEmail();
+    req.checkBody('password', 'Password must be atleast 4 characters long.').len(4, 100);
+    req.checkBody('confirmPassword', 'Passwords do not match, please try again.').equals(req.body.password);
+
+    let errors = req.validationErrors();
+    if(errors){
+        console.log(errors);
+        res.render("index",{
+            errors:errors,
+            islogin:false
+        });
+    }
+    let err=[];
+    let error={};
+    error.msg="User with the given email already exists!";
     let email=req.body.email;
-    if(isuserPresent.indexOf(email) !== -1)
-    res.send("<script> alert('User already present'); </script>");
+    err.push(error);
+    if(isuserPresent.indexOf(_.kebabCase(email)) !== -1)
+    res.render("index",{errors:err,islogin:false});
     let user = {};
     user.id=++userCount;
     user.name=req.body.username;
