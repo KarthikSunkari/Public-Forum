@@ -1,2 +1,2 @@
 # Public-Forum
-Web application of a discussion forum.
+A simple Web application for a discussion forum.
