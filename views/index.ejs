@@ -1,14 +1,13 @@
 <%- include('partials/header');  %>
 
-    <%if(typeof errors != "undefined"){%>
-        <%errors.forEach(function(error){%>
+    <% if(typeof message != "undefined"){ %>
         <div class="alert alert-danger">
-            <%= error.msg%> 
-        </div>
-        <%});%>
+            <%= message.error%> 
+        </div>    
     <%}%>
 
     <% if(islogin){ %>
+        <h2>Login</h2>
         <form action="/" method="post">
             <div class="form-group">
                 <label for="Email">Email address</label>
@@ -20,6 +19,7 @@
             Not a member?<a href="/signup" >SignUp</a>
         </form>
     <%} else {%>
+        <h2>Register</h2>
         <form action="/signup" method="post">
             <div class="form-group">
                 <label for="username">Username</label>
@@ -31,8 +31,6 @@
                 <label for="Password">Password</label>
                 <input type="password" class="form-control" name="password" placeholder="Password">
     
-                <label for="confirmPassword">Confirm Password</label>
-                <input type="password" class="form-control" name="confirmPassword" placeholder="Re-Enter Password">
             </div>
             <button type="submit" class="btn btn-primary">SignUp</button>
         </form>

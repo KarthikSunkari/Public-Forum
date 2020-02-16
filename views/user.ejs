@@ -1,7 +1,11 @@
 <%- include('partials/header');  %>
-
-    <h1><%= user.name %></h1><br>
-    <form action="/user/<%= email %>" method="POST">
+<div class="navbar">
+    <h1 style="display: inline;"><%= user.name %></h1>
+    <form style="display: inline; float: right; padding-top: 5px" action="/logout?_method=DELETE" method="POST">
+        <button type="submit" class="btn btn-primary">Log Out</button>
+    </form>
+</div>
+    <form action="/user" method="POST">
     <div class="form-group">
       <label>Title</label>
       <input type="text" name="postTitle" class="form-control">

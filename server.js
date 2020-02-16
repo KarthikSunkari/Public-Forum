@@ -1,109 +1,116 @@
-//jshint esversion:6
+//jshint esversion:8
 const express = require("express");
 const bodyParser = require("body-parser");
-const app = express();
-const _ = require('lodash');
-const expressValidator = require('express-validator');
-app.set('view engine', 'ejs');
-app.use(bodyParser.urlencoded({extended:true}));
-app.use(expressValidator());
-app.use(express.static("public"));
+const bcrypt = require("bcrypt");
+const passport = require('passport');
+const initializePassport = require('./passport-config');
+const flash = require('express-flash');
+const session = require('express-session');
+const methodOveride = require('method-override');
 
 let users=[];
 let isuserPresent=[];
 let userCount=0;
 
-app.get("/",function(req,res){
+initializePassport(
+    passport, 
+    email => users.find(user => user.email === email),
+    id => users.find(user => user.id === id)
+);
+
+const app = express();
+app.set('view engine', 'ejs');
+app.use(bodyParser.urlencoded({extended:true}));
+app.use(express.static(__dirname + '/public'));
+app.use(flash());
+require('dotenv').config();
+app.use(session({
+    secret:process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false
+}));
+app.use(passport.initialize());
+app.use(passport.session());
+app.use(methodOveride('_method'));
+
+app.get("/",checkNotAuthenticated,function(req,res){
     res.render("index",{
         islogin:true
     });
 });
 
-app.get("/signup",function(req,res){
+app.get("/signup",checkNotAuthenticated,function(req,res){
     res.render("index",{
         islogin:false
     });
 });
 
-app.post("/",function(req,res){
-	let email=req.body.email;
-    let password=req.body.password;
-    users.forEach(user => {
-        if(email===user.email){
-            if(password===user.password){
-                console.log("Login Successful");
-                let s=_.kebabCase(email);
-                res.redirect('/user/'+s);
-            }
-        }
-    });
-    res.send("<h2>Login Unsuccessful!</h2>");
-});
+app.post("/",passport.authenticate('local',{
+    successRedirect:'/user',
+    failureRedirect:'/',
+    failureFlash:true
+}));
 
-app.post("/signup",function(req,res){
-
-    req.checkBody('username', 'Username field cannot be empty.').notEmpty();
-    req.checkBody('email', 'The email you entered is invalid, please try again.').isEmail();
-    req.checkBody('password', 'Password must be atleast 4 characters long.').len(4, 100);
-    req.checkBody('confirmPassword', 'Passwords do not match, please try again.').equals(req.body.password);
-
-    let errors = req.validationErrors();
-    if(errors){
-        console.log(errors);
-        res.render("index",{
-            errors:errors,
-            islogin:false
-        });
-    }
-    let err=[];
-    let error={};
-    error.msg="User with the given email already exists!";
+app.post("/signup",async function(req,res){
     let email=req.body.email;
-    err.push(error);
-    if(isuserPresent.indexOf(_.kebabCase(email)) !== -1)
-    res.render("index",{errors:err,islogin:false});
-    let user = {};
-    user.id=++userCount;
-    user.name=req.body.username;
-    user.email=email;
-    user.password=req.body.password;
+    if(isuserPresent.indexOf(email) != -1){
+        res.send("<h2>User already present</h2>");
+        return;
+    }
+    const hashedPassword = await bcrypt.hash(req.body.password,3);
+    let user={
+        id:++userCount,
+        name:req.body.username,
+        email:email,
+        password:hashedPassword,
+    };
     user.posts=[];
-    let intropost={};
-    intropost.title="Intro";
-    intropost.content="Hi I am "+ user.name;
+    let intropost={
+        title:"Intro",
+        content:"Hi, I am "+ user.name + "!"
+    };
+    console.log(user);
     user.posts.push(intropost);
     users.push(user);
-    let kebabCaseEmail=_.kebabCase(email);
-    isuserPresent.push(kebabCaseEmail);
-    res.redirect("/user/"+kebabCaseEmail);
+    isuserPresent.push(email);
+    res.redirect("/user");
 });
 
-app.get("/user/:userEmail",function(req,res){
-    let userEmail=req.params.userEmail;
-    console.log(userEmail);
-    let i=isuserPresent.indexOf(userEmail);
-    if(i==-1)
-    res.send("<h3>No such user!</h3>");
-    let user=users[i];
-    let kebabCaseEmail=_.kebabCase(userEmail);
+app.delete('/logout',(req,res)=>{
+    req.logOut();
+    res.redirect('/');
+});
+
+app.get("/user",checkAuthenticated,function(req,res){
     res.render("user",{
-        email:kebabCaseEmail,
-        user:user
+        user:req.user
     });
 });
   
-app.post("/user/:userEmail",function(req,res){
-    let userEmail=req.params.userEmail;
+app.post("/user",checkAuthenticated,function(req,res){
     let title=req.body.postTitle;
     let content=req.body.postContent;
-    let i=isuserPresent.indexOf(userEmail);
-    let posts=users[i].posts;
+    let posts=req.user.posts;
     let post={};
     post.title=title;
     post.content=content;
     posts.push(post);
-    res.redirect("/user/"+userEmail);
+    res.redirect("/user/");
 });
+
+function checkAuthenticated(req, res, next){
+    if(req.isAuthenticated()){
+        return next();
+    }
+    res.redirect('/'); 
+}
+
+function checkNotAuthenticated(req,res,next){
+    if(req.isAuthenticated()){
+        return res.redirect('/user');
+    }
+    next();
+}
 
 app.listen(3000, function () {
     console.log("Server started on port 3000");
