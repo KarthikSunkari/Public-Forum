@@ -25,7 +25,7 @@ app.use(express.static(__dirname + '/public'));
 app.use(flash());
 require('dotenv').config();
 app.use(session({
-    secret:process.env.SESSION_SECRET,
+    secret:"cookie_secret",//process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false
 }));
